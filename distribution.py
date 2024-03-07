@@ -108,7 +108,7 @@ def generate_objects(file_handle):
         if head is None or material is None or hand is None or background_gem is None:
             break
 
-        total_rarity = get_attribute_rarity(head, material, hand, background_gem)
+        total_rarity = get_total_rarity(head, material, hand, background_gem)
 
         out_line = f'{head},{material},{hand},{background_gem},{total_rarity*100:.4f}\n'
         file_handle.write(out_line)
@@ -134,11 +134,12 @@ def generate_all_possible(filename):
         for material in materials:
             for hand in hands:
                 for background_gem in background_gems:
-                    total_rarity = get_attribute_rarity(head, material, hand, background_gem)
+                    total_rarity = get_total_rarity(head, material, hand, background_gem)
 
                     out_line = f'{head},{material},{hand},{background_gem},{total_rarity*100:.4f}\n'
                     csv.write(out_line)
     csv.close()
+    print(f'written to {filename}')
 
 
 def main():
