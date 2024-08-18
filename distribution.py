@@ -10,6 +10,8 @@ parser.add_argument('--concatenate', '-c', action='store_true',
                     help='For use with --bulk. Concatenate into one big file instead of separtate files')
 parser.add_argument('--all-possible', action='store_true',
                     help='Generate all possible combinations without regard to attribute distribution')
+parser.add_argument('--coeff', type=int, default=1000,
+                    help='Random sampling pool generation size multiplied by COEFF (default 1000)')
 
 args = parser.parse_args()
 
@@ -62,8 +64,7 @@ background_urnas = {
 
 def pop_item(items):
     keys = list(items.keys())
-    random.shuffle(keys)
-    key = keys[0]
+    key = keys[random.randint(0, len(keys)-1)]
     key_index = 0
 
     while not items[key]:
@@ -93,12 +94,25 @@ def get_total_rarity(mudra, material, hairstyle, background_urna):
             get_attribute_rarity(background_urna, background_urnas)
 
 
-def generate_objects(file_handle):
+def multiply_items(items, x):
+    for key in items:
+        items[key] *= x
+
+
+def generate_objects(file_handle, coeff=10):
+    existing_combos = {}
+    raw_combinations = []
     _mudras = copy.deepcopy(mudras)
     _hairstyles = copy.deepcopy(hairstyles)
     _materials = copy.deepcopy(materials)
     _background_urnas = copy.deepcopy(background_urnas)
 
+    multiply_items(_mudras, coeff)
+    multiply_items(_hairstyles, coeff)
+    multiply_items(_materials, coeff)
+    multiply_items(_background_urnas, coeff)
+
+    print("populating raw")
     while True:
         mudra = pop_item(_mudras)
         material = pop_item(_materials)
@@ -108,20 +122,50 @@ def generate_objects(file_handle):
         if mudra is None or material is None or hairstyle is None or background_urna is None:
             break
 
+        raw_combinations.append([mudra, material, hairstyle, background_urna])
+
+    maxtries = 10000
+    tries = 0
+    count = 0
+    print("sampling from raw")
+    while tries < maxtries:
+        i = random.randint(0, len(raw_combinations)-1)
+        combination = raw_combinations[i]
+
+        mudra = combination[0]
+        material = combination[1]
+        hairstyle = combination[2]
+        background_urna = combination[3]
+
+        combination_string = f"{mudra},{hairstyle},{material},{background_urna}"
+
+        if combination_string in existing_combos:
+            tries += 1
+            continue
+
         total_rarity = get_total_rarity(mudra, material, hairstyle, background_urna)
 
         out_line = f'{mudra},{hairstyle},{material},{background_urna},{total_rarity*100:.4f}\n'
         file_handle.write(out_line)
+
+        existing_combos[combination_string] = True
+        count += 1
+
+        if count == 1000:
+            break
+
+    if tries == maxtries:
+        print(f"max tries reached ({maxtries})")
 
 
 def generate_header(file_handle):
     file_handle.write('Mudra,Hairstyle,Material,Background & Urnas,Rarity %\n')
 
 
-def generate_file(filename):
+def generate_file(filename, coeff):
     csv = open(filename, 'w')
     generate_header(csv)
-    generate_objects(csv)
+    generate_objects(csv, coeff)
     csv.close()
     print(f'written to {filename}')
 
@@ -160,7 +204,7 @@ def main():
                     generate_header(concatenate_file_handle)
                 generate_objects(concatenate_file_handle)
             else:
-                generate_file(f'{filename}-{bulk_count}.csv')
+                generate_file(f'{filename}-{bulk_count}.csv', args.coeff)
             bulk_count -= 1
 
         if concatenate_file_handle is not None:
@@ -168,7 +212,7 @@ def main():
             print(f'written to {filename}.csv')
         return
 
-    generate_file(f'{filename}.csv')
+    generate_file(f'{filename}.csv', args.coeff)
 
 
 if __name__ == "__main__":
