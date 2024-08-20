@@ -15,50 +15,50 @@ parser.add_argument('--coeff', type=int, default=1000,
 
 args = parser.parse_args()
 
-mudras = {
-        "Dhyana": 200,
-        "Bhumisparsha": 110,
-        "Dharmchakra": 60,
-        "Varada": 120,
-        "Abhaya": 150,
-        "Anajali": 200,
-        "Vitarka": 130,
-        "Combo": 30,
-        }
-
-hairstyles = {
-        "Sixteen Kingdoms": 50,
-        "Mathura": 30,
-        "Gandhara": 150,
-        "Tang": 70,
-        "338": 20,
-        "Gupta": 200,
-        "LotusSutra": 130,
-        "Himalayas": 160,
-        "Sukkothai": 90,
+heads = {
+        "Plain": 100,
+        "Mathura": 100,
+        "Gandara": 100,
+        "Tang": 100,
+        "Han": 100,
+        "Gupta": 100,
+        "Jewel": 100,
+        "Tibetan": 100,
+        "Thai": 100,
         "Khmer": 100,
         }
 
 materials = {
-        "Aurora": 80,
-        "Rainbow": 40,
-        "Fire": 100,
-        "Ocean": 90,
-        "Gold": 210,
-        "Forest": 80,
-        "Lotus": 70,
+        "Aurora": 25,
+        "Rainbow": 25,
+        "Fire": 25,
+        "Ocean": 25,
+        "Gold": 150,
+        "Forest": 150,
+        "Lotus": 150,
         "Porelain": 150,
-        "Earth": 80,
-        "Silicon": 100,
+        "Earth": 150,
+        "Silicon": 150,
         }
 
-background_urnas = {
-        "Diamond": 150,
-        "Ruby": 210,
-        "Emerald": 120,
-        "Lapis Lazuli": 170,
-        "Amber": 260,
-        "Taaffeite": 90,
+hands = {
+        "Combo": 90,
+        "Dyana": 130,
+        "Bhumisparsa": 130,
+        "Dharmachakra": 130,
+        "Varada": 130,
+        "Abaya": 130,
+        "Anjali": 130,
+        "Vitarka": 130,
+        }
+
+background_gems = {
+        "Diamond": 100,
+        "Ruby": 180,
+        "Emerald": 180,
+        "Lapis Lazuli": 180,
+        "Amber": 180,
+        "Taaffeite": 180,
         }
 
 
@@ -87,11 +87,11 @@ def get_attribute_rarity(attribute, attribute_distribution):
     return rarity
 
 
-def get_total_rarity(mudra, material, hairstyle, background_urna):
-    return get_attribute_rarity(mudra, mudras) * \
+def get_total_rarity(head, material, hand, background_gem):
+    return get_attribute_rarity(head, heads) * \
             get_attribute_rarity(material, materials) * \
-            get_attribute_rarity(hairstyle, hairstyles) * \
-            get_attribute_rarity(background_urna, background_urnas)
+            get_attribute_rarity(hand, hands) * \
+            get_attribute_rarity(background_gem, background_gems)
 
 
 def multiply_items(items, x):
@@ -102,27 +102,27 @@ def multiply_items(items, x):
 def generate_objects(file_handle, coeff=10):
     existing_combos = {}
     raw_combinations = []
-    _mudras = copy.deepcopy(mudras)
-    _hairstyles = copy.deepcopy(hairstyles)
+    _heads = copy.deepcopy(heads)
     _materials = copy.deepcopy(materials)
-    _background_urnas = copy.deepcopy(background_urnas)
+    _hands = copy.deepcopy(hands)
+    _background_gems = copy.deepcopy(background_gems)
 
-    multiply_items(_mudras, coeff)
-    multiply_items(_hairstyles, coeff)
+    multiply_items(_heads, coeff)
     multiply_items(_materials, coeff)
-    multiply_items(_background_urnas, coeff)
+    multiply_items(_hands, coeff)
+    multiply_items(_background_gems, coeff)
 
     print("populating raw")
     while True:
-        mudra = pop_item(_mudras)
+        head = pop_item(_heads)
         material = pop_item(_materials)
-        hairstyle = pop_item(_hairstyles)
-        background_urna = pop_item(_background_urnas)
+        hand = pop_item(_hands)
+        background_gem = pop_item(_background_gems)
 
-        if mudra is None or material is None or hairstyle is None or background_urna is None:
+        if head is None or material is None or hand is None or background_gem is None:
             break
 
-        raw_combinations.append([mudra, material, hairstyle, background_urna])
+        raw_combinations.append([head, material, hand, background_gem])
 
     maxtries = 10000
     tries = 0
@@ -132,20 +132,20 @@ def generate_objects(file_handle, coeff=10):
         i = random.randint(0, len(raw_combinations)-1)
         combination = raw_combinations[i]
 
-        mudra = combination[0]
+        head = combination[0]
         material = combination[1]
-        hairstyle = combination[2]
-        background_urna = combination[3]
+        hand = combination[2]
+        background_gem = combination[3]
 
-        combination_string = f"{mudra},{hairstyle},{material},{background_urna}"
+        combination_string = f"{head},{material},{hand},{background_gem}"
 
         if combination_string in existing_combos:
             tries += 1
             continue
 
-        total_rarity = get_total_rarity(mudra, material, hairstyle, background_urna)
+        total_rarity = get_total_rarity(head, material, hand, background_gem)
 
-        out_line = f'{mudra},{hairstyle},{material},{background_urna},{total_rarity*100:.4f}\n'
+        out_line = f'{head},{material},{hand},{background_gem},{total_rarity*100:.4f}\n'
         file_handle.write(out_line)
 
         existing_combos[combination_string] = True
@@ -159,7 +159,7 @@ def generate_objects(file_handle, coeff=10):
 
 
 def generate_header(file_handle):
-    file_handle.write('Mudra,Hairstyle,Material,Background & Urnas,Rarity %\n')
+    file_handle.write('Head,Material,Hand,Background Gem,Rarity %\n')
 
 
 def generate_file(filename, coeff):
@@ -174,13 +174,13 @@ def generate_all_possible(filename):
     csv = open(filename, 'w')
     generate_header(csv)
 
-    for mudra in mudras:
-        for hairstyle in hairstyles:
-            for material in materials:
-                for background_urna in background_urnas:
-                    total_rarity = get_total_rarity(mudra, material, hairstyle, background_urna)
+    for head in heads:
+        for material in materials:
+            for hand in hands:
+                for background_gem in background_gems:
+                    total_rarity = get_total_rarity(head, material, hand, background_gem)
 
-                    out_line = f'{mudra},{material},{hairstyle},{background_urna},{total_rarity*100:.4f}\n'
+                    out_line = f'{head},{material},{hand},{background_gem},{total_rarity*100:.4f}\n'
                     csv.write(out_line)
     csv.close()
     print(f'written to {filename}')
