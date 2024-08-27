@@ -99,7 +99,7 @@ def multiply_items(items, x):
         items[key] *= x
 
 
-def generate_objects(file_handle, coeff=10):
+def generate_objects(file_handle, coeff):
     existing_combos = {}
     raw_combinations = []
     _heads = copy.deepcopy(heads)
@@ -197,12 +197,16 @@ def main():
     if args.bulk is not None:
         concatenate_file_handle = None
         bulk_count = args.bulk
+
+        if args.concatenate:
+            print("Warning: this option does not check for duplicates between multiple generations at the moment")
+
         while bulk_count:
             if args.concatenate:
                 if concatenate_file_handle is None:
                     concatenate_file_handle = open(f'{filename}.csv', 'w')
                     generate_header(concatenate_file_handle)
-                generate_objects(concatenate_file_handle)
+                generate_objects(concatenate_file_handle, args.coeff)
             else:
                 generate_file(f'{filename}-{bulk_count}.csv', args.coeff)
             bulk_count -= 1
